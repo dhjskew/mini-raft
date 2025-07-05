@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +26,7 @@ public class Node {
     public StateMachine getStateMachine() {
         return stateMachine;
     }
+    private volatile String currentLeaderId; // **新增：缓存当前 Leader 的 ID**
     // --- Raft 核心状态 ---
     private final String selfId; // 节点自身ID
     private volatile NodeState state; // 节点当前状态，volatile保证线程可见性
@@ -425,6 +425,7 @@ public class Node {
         }
 
         resetElectionTimer();
+        this.currentLeaderId = args.getLeaderId();
 
         if (args.getTerm() > this.currentTerm) {
             becomeFollower(args.getTerm());
@@ -469,9 +470,7 @@ public class Node {
         result.setSuccess(true);
         return result;
     }
-    /**
-     * 处理来自 Follower 的 AppendEntries 响应（包括心跳响应）
-     */
+
     private void handleAppendEntriesResult(AppendEntriesResult result, String peerId, List<LogEntry> sentEntries) {
         // 如果响应的任期大于当前任期，说明自己已经过时，立刻下台
         if (result.getTerm() > this.currentTerm) {
@@ -532,13 +531,21 @@ public class Node {
      * @param command 客户端命令
      * @return 是否成功接收（不代表成功执行）
      */
-    public boolean handleClientRequest(Command command) {
+    public ClientResponse handleClientRequest(Command command) {
         if (state != NodeState.LEADER) {
-            logger.warn("Node {} is not a leader, cannot handle client request.", selfId);
-            // TODO: 可以返回当前已知的 leader 地址
-            return false;
+            logger.warn("Node {} is not a leader, redirecting client.", selfId);
+            String leaderAddress = peerAddresses.get(currentLeaderId);
+            // 增加一个检查，防止因为刚启动currentLeaderId还未同步而返回null
+            if (leaderAddress == null) {
+                leaderAddress = "";
+            }
+            // **关键修改：返回失败响应，并附上 Leader 的地址**
+            return ClientResponse.failure(currentLeaderId, peerAddresses.get(currentLeaderId));
         }
-
+        if ("GET".equalsIgnoreCase(command.getOperation())) {
+            String value = stateMachine.get(command.getKey());
+            return ClientResponse.success(value);
+        }
         logger.info("Leader {} received command: {}", selfId, command);
 
         // 1. 将命令作为新条目追加到自己的日志中
@@ -550,7 +557,7 @@ public class Node {
         // 2. 向所有 Follower 并发地发送 AppendEntries RPC 来复制该条目
         replicateLogsToFollowers();
 
-        return true;
+        return ClientResponse.success("OK");
     }
     /**
      * 比较候选人的日志是否至少和本节点一样新

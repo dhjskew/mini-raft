@@ -33,6 +33,10 @@ public class RpcServerHandler extends SimpleChannelInboundHandler<RpcMessage> {
                 AppendEntriesArgs appendArgs = (AppendEntriesArgs) msg.getPayload(); // 直接转换
                 resultPayload = node.handleAppendEntries(appendArgs);
                 break;
+            case "ClientRequest":
+                com.anzhi.raft.rpc.ClientRequest clientRequest = (com.anzhi.raft.rpc.ClientRequest) msg.getPayload();
+                resultPayload = node.handleClientRequest(clientRequest.getCommand());
+                break;
             default:
                 logger.warn("Unknown message type: {}", msg.getMessageType());
         }
