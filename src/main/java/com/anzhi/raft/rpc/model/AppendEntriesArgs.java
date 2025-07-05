@@ -1,6 +1,6 @@
-package com.anzhi.raft.rpc;
+package com.anzhi.raft.rpc.model;
 
-import com.anzhi.raft.LogEntry;
+import com.anzhi.raft.core.LogEntry;
 import java.io.Serializable;
 import java.util.List;
 

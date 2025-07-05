@@ -1,6 +1,6 @@
-package com.anzhi.raft.rpc;
+package com.anzhi.raft.client;
 
-import com.anzhi.raft.Command;
+import com.anzhi.raft.core.Command;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;

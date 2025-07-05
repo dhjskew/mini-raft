@@ -1,4 +1,6 @@
-package com.anzhi.raft;
+package com.anzhi.raft.statemachine;
+
+import com.anzhi.raft.core.Command;
 
 /**
  * 状态机接口

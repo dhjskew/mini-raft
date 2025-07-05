@@ -1,5 +1,6 @@
-package com.anzhi.raft;
+package com.anzhi.raft.storage;
 
+import com.anzhi.raft.core.LogEntry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

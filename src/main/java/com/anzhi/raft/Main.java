@@ -1,5 +1,6 @@
 package com.anzhi.raft;
 
+import com.anzhi.raft.core.Node;
 import com.anzhi.raft.rpc.RpcServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

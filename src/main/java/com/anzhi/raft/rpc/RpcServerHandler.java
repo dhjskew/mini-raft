@@ -1,6 +1,10 @@
 package com.anzhi.raft.rpc;
 
-import com.anzhi.raft.Node;
+import com.anzhi.raft.core.Node;
+import com.anzhi.raft.client.ClientRequest;
+import com.anzhi.raft.rpc.model.AppendEntriesArgs;
+import com.anzhi.raft.rpc.model.RequestVoteArgs;
+import com.anzhi.raft.rpc.model.RpcMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -34,7 +38,7 @@ public class RpcServerHandler extends SimpleChannelInboundHandler<RpcMessage> {
                 resultPayload = node.handleAppendEntries(appendArgs);
                 break;
             case "ClientRequest":
-                com.anzhi.raft.rpc.ClientRequest clientRequest = (com.anzhi.raft.rpc.ClientRequest) msg.getPayload();
+                ClientRequest clientRequest = (ClientRequest) msg.getPayload();
                 resultPayload = node.handleClientRequest(clientRequest.getCommand());
                 break;
             default:

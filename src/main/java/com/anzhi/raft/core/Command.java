@@ -1,4 +1,4 @@
-package com.anzhi.raft;
+package com.anzhi.raft.core;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

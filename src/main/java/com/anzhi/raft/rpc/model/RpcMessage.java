@@ -1,4 +1,4 @@
-package com.anzhi.raft.rpc;
+package com.anzhi.raft.rpc.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 

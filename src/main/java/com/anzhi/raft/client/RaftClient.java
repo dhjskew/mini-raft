@@ -1,13 +1,11 @@
-package com.anzhi.raft;
+package com.anzhi.raft.client;
 
-import com.anzhi.raft.rpc.ClientRequest;
+import com.anzhi.raft.core.Command;
 import com.anzhi.raft.rpc.RpcClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;

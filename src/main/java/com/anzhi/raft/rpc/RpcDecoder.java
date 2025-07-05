@@ -1,6 +1,7 @@
 package com.anzhi.raft.rpc;
 
 
+import com.anzhi.raft.rpc.model.RpcMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;

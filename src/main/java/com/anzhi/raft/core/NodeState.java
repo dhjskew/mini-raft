@@ -1,4 +1,4 @@
-package com.anzhi.raft;
+package com.anzhi.raft.core;
 
 public enum NodeState {
     FOLLOWER,

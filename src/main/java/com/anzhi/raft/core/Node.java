@@ -1,6 +1,17 @@
-package com.anzhi.raft;
+package com.anzhi.raft.core;
 
+import com.anzhi.raft.client.ClientResponse;
 import com.anzhi.raft.rpc.*;
+import com.anzhi.raft.rpc.model.AppendEntriesArgs;
+import com.anzhi.raft.rpc.model.AppendEntriesResult;
+import com.anzhi.raft.rpc.model.RequestVoteArgs;
+import com.anzhi.raft.rpc.model.RequestVoteResult;
+import com.anzhi.raft.statemachine.InMemoryStateMachine;
+import com.anzhi.raft.statemachine.StateMachine;
+import com.anzhi.raft.storage.FileLogModule;
+import com.anzhi.raft.storage.FileStorage;
+import com.anzhi.raft.storage.LogModule;
+import com.anzhi.raft.storage.PersistentState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 // ... (其他 import)

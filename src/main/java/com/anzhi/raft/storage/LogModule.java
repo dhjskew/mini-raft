@@ -1,4 +1,6 @@
-package com.anzhi.raft;
+package com.anzhi.raft.storage;
+
+import com.anzhi.raft.core.LogEntry;
 
 import java.util.List;
 

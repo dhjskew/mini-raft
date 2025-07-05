@@ -1,7 +1,7 @@
 package com.anzhi.raft.rpc;
 
 
-import com.anzhi.raft.Node;
+import com.anzhi.raft.core.Node;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
