@@ -4,6 +4,9 @@ import com.anzhi.raft.rpc.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 // ... (其他 import)
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -29,12 +32,14 @@ public class Node {
     private volatile NodeState state; // 节点当前状态，volatile保证线程可见性
     private final Map<String, String> peerAddresses; // 其他节点的ID和地址(ip:port)
 
-    // --- 日志模块 ---
-    private final LogModule logModule; // 新增日志模块字段
-
     // --- 持久化状态 (所有服务器) ---
     private volatile long currentTerm;
     private volatile String votedFor; // 在当前任期投票给谁
+    private final LogModule logModule; // ***** MODIFIED *****: 接口不变，实现将改变
+
+    // ***** NEW *****: 文件路径相关
+    private final Path dataDir;
+    private final Path metadataFile;
 
     // --- 易失性状态 (所有服务器) ---
     private AtomicInteger votesReceived; // 作为 Candidate 收到的票数
@@ -64,15 +69,28 @@ public class Node {
 
     private final RpcClient rpcClient = RpcClient.getInstance();
 
-    public Node(String selfId, Map<String, String> peerAddresses) {
+    public Node(String selfId, Map<String, String> peerAddresses, Path dataDir) {
         this.selfId = selfId;
         this.peerAddresses = peerAddresses;
-        this.logModule = new InMemoryLogModule();
-        this.stateMachine = new InMemoryStateMachine(); // **在构造函数中实例化状态机**
-        this.commitIndex = 0; // 初始化 commitIndex
-        this.lastApplied = 0; // 初始化 lastApplied
-    }
+        this.dataDir = dataDir;
+        this.metadataFile = dataDir.resolve("metadata.json");
 
+        try {
+            Files.createDirectories(dataDir);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to create data directory", e);
+        }
+
+        // 加载持久化状态
+        loadPersistentState();
+
+        // 使用 FileLogModule
+        this.logModule = new FileLogModule(dataDir);
+
+        this.stateMachine = new InMemoryStateMachine();
+        this.commitIndex = 0;
+        this.lastApplied = 0;
+    }
 
     public void start() {
         logger.info("Node {} starting...", selfId);
@@ -106,6 +124,7 @@ public class Node {
         this.state = NodeState.FOLLOWER;
         this.currentTerm = term;
         this.votedFor = null; // 新任期开始，清空投票记录
+        persistState(); // <--- 添加持久化调用
 
         // 如果之前是 Leader 或 Candidate，需要取消心跳或选举定时器
         if (heartbeatTimerFuture != null) {
@@ -123,6 +142,7 @@ public class Node {
         // 投票给自己
         this.votedFor = selfId;
         this.votesReceived = new AtomicInteger(1);
+        persistState(); // <--- 添加持久化调用
 
         // 重置选举定时器
         resetElectionTimer();
@@ -357,11 +377,10 @@ public class Node {
             return result;
         }
 
-
-
         // 如果以上所有检查都通过，就投票给它
         logger.info("Node {} GRANTED vote for {} in term {}", selfId, args.getCandidateId(), this.currentTerm);
         this.votedFor = args.getCandidateId();
+        persistState(); // <--- 添加持久化调用
         result.setVoteGranted(true);
 
         // 投票后，重置自己的选举定时器，因为该候选人有可能成为 Leader
@@ -550,6 +569,25 @@ public class Node {
             return true;
         }
         return false;
+    }
+    // ***** NEW *****: 加载和保存状态的方法
+    private void loadPersistentState() {
+        logger.info("Node {} loading persistent state...", selfId);
+        PersistentState state = FileStorage.load(metadataFile);
+        this.currentTerm = state.getCurrentTerm();
+        this.votedFor = state.getVotedFor();
+        logger.info("Node {} loaded state: currentTerm={}, votedFor={}", selfId, this.currentTerm, this.votedFor);
+    }
+
+    private synchronized void persistState() {
+        try {
+            PersistentState state = new PersistentState(this.currentTerm, this.votedFor);
+            FileStorage.save(state, metadataFile);
+        } catch (IOException e) {
+            logger.error("FATAL: Failed to persist state on node {}. Shutting down to prevent inconsistency.", selfId, e);
+            // 在生产环境中，这种失败是致命的，可能需要关闭节点
+            System.exit(1);
+        }
     }
     // 辅助方法，用于 RpcServerHandler
     public String getSelfId() {

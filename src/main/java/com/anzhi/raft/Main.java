@@ -5,17 +5,31 @@ import com.anzhi.raft.rpc.RpcServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 
 public class Main {
 
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException, IOException {
+
+        // ***** NEW *****: 清理旧数据以进行全新模拟
+        Path baseDataDir = Paths.get("./data");
+        if (Files.exists(baseDataDir)) {
+            Files.walk(baseDataDir)
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
+        }
+        logger.info("Cleaned up old data directories.");
+        // 要测试崩溃恢复，请注释掉上面的清理代码，然后再次运行程序
+
         // 1. 定义集群配置
         Map<String, String> clusterConfig = new HashMap<>();
         clusterConfig.put("node-1", "localhost:8081");
@@ -35,8 +49,11 @@ public class Main {
             Map<String, String> peerConfig = new HashMap<>(clusterConfig);
             peerConfig.remove(nodeId);
 
-            // 创建 Raft 节点实例
-            Node node = new Node(nodeId, peerConfig);
+            // ***** 关键修复 2: 定义数据目录并传递给 Node 构造函数 *****
+            Path nodeDataDir = baseDataDir.resolve(nodeId);
+
+            // 使用新的构造函数创建 Raft 节点实例
+            Node node = new Node(nodeId, peerConfig, nodeDataDir);
             nodes.add(node);
 
             // 创建与该节点绑定的 RPC 服务器
